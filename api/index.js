@@ -149,7 +149,7 @@ app.post("/webhook", async (req, res) => {
         );
       } else if (type === "payment.failed" || type === "qrph.expired") {
         await db.query(
-          "UPDATE transactions SET status = $1 WHERE intent_id = $2 AND status = 'pending'",
+          "UPDATE transactions SET status = $1, qr_image = NULL WHERE intent_id = $2 AND status = 'pending'",
           [type === "qrph.expired" ? "expired" : "failed", intentId]
         );
       }
