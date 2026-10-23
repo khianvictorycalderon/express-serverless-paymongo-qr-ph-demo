@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QR Ph Demo</title>
+  <style>
+    :root {
+      --bg: #f4f6fb; --card: #fff; --text: #1b2236; --muted: #6b7690; --line: #e6e9f2;
+      --brand: #3b5bfd; --brand-dark: #2d47d6;
+      --ok-bg: #e3f7ec; --ok: #12814a; --wait-bg: #fff4dc; --wait: #a36a00;
+      --bad-bg: #fde8e8; --bad: #c0392b; --idle-bg: #eceff5; --idle: #5b6479;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f1320; --card: #181d2e; --text: #e9ecf6; --muted: #98a2bd; --line: #262d44;
+        --ok-bg: #12301f; --ok: #4cd98c; --wait-bg: #3a2d0c; --wait: #f2b84b;
+        --bad-bg: #3a1717; --bad: #ff8a7a; --idle-bg: #232a3f; --idle: #aab3cc;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.5; padding: 32px 16px 64px;
+    }
+    .wrap { max-width: 720px; margin: 0 auto; }
+    header { text-align: center; margin-bottom: 24px; }
+    header h1 { margin: 0 0 4px; font-size: 1.6rem; }
+    header p { margin: 0; color: var(--muted); }
+    .card {
+      background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+      padding: 24px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(20, 30, 70, .05);
+    }
+    .card h2 { margin: 0 0 16px; font-size: 1.1rem; }
+    .row { display: flex; gap: 10px; }
+    .amount { position: relative; flex: 1; }
+    .amount span {
+      position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+      color: var(--muted); font-weight: 600;
+    }
+    input[type=number] {
+      width: 100%; padding: 13px 14px 13px 32px; font-size: 1.1rem; color: var(--text);
+      background: transparent; border: 1px solid var(--line); border-radius: 10px; outline: none;
+    }
+    input[type=number]:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(59, 91, 253, .18); }
+    button, .btn {
+      background: var(--brand); color: #fff; border: 0; border-radius: 10px; padding: 13px 20px;
+      font-size: 1rem; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block;
+    }
+    button:hover, .btn:hover { background: var(--brand-dark); }
+    .btn.ghost { background: transparent; color: var(--brand); border: 1px solid var(--line); padding: 8px 14px; font-size: .9rem; }
+    .btn.ghost:hover { background: var(--idle-bg); }
+    .hint { margin: 10px 0 0; font-size: .85rem; color: var(--muted); }
+    .error { background: var(--bad-bg); color: var(--bad); padding: 10px 14px; border-radius: 10px; margin-top: 12px; font-size: .95rem; }
+    .qr { text-align: center; }
+    .qr img { width: 260px; max-width: 100%; border-radius: 12px; border: 1px solid var(--line); background: #fff; padding: 8px; }
+    .qr .big { font-size: 1.6rem; font-weight: 700; margin: 8px 0 0; }
+    .qr p { color: var(--muted); margin: 6px 0 16px; }
+    .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .head h2 { margin: 0; }
+    table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+    th { text-align: left; color: var(--muted); font-weight: 600; font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
+    th, td { padding: 10px 8px; border-bottom: 1px solid var(--line); }
+    tr:last-child td { border-bottom: 0; }
+    td.amt { font-weight: 600; white-space: nowrap; }
+    .pill { padding: 3px 10px; border-radius: 999px; font-size: .8rem; font-weight: 600; text-transform: capitalize; }
+    .pill.paid { background: var(--ok-bg); color: var(--ok); }
+    .pill.pending { background: var(--wait-bg); color: var(--wait); }
+    .pill.failed { background: var(--bad-bg); color: var(--bad); }
+    .pill.expired { background: var(--idle-bg); color: var(--idle); }
+    .muted { color: var(--muted); }
+    .empty { text-align: center; padding: 24px 0 8px; color: var(--muted); }
+    .scroll { overflow-x: auto; }
+    a.link { color: var(--brand); font-size: .85rem; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>QR Ph Demo</h1>
+      <p>Enter an amount, scan the code with any bank or e-wallet app.</p>
+    </header>
+
+    <% if (qr) { %>
+    <section class="card qr">
+      <h2>Scan to pay</h2>
+      <img src="<%= qr.qr_image %>" alt="QR Ph code" />
+      <div class="big"><%= peso(qr.amount) %></div>
+      <p>After paying, wait a few seconds then refresh to see the status update.</p>
+      <a class="btn" href="/">Done</a>
+    </section>
+    <% } %>
+
+    <section class="card">
+      <h2>New payment</h2>
+      <form method="post" action="/pay">
+        <div class="row">
+          <div class="amount">
+            <span>₱</span>
+            <input type="number" name="amount" step="0.01" min="<%= minAmount %>" placeholder="<%= minAmount %>.00"
+                   value="<%= typeof amount !== 'undefined' && amount ? amount : '' %>" required />
+          </div>
+          <button type="submit">Generate QR</button>
+        </div>
+        <% if (error) { %><div class="error"><%= error %></div><% } %>
+        <p class="hint">Minimum ₱<%= minAmount %>. This creates a real QR Ph code, so a scanned payment moves real money.</p>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="head">
+        <h2>Transaction history</h2>
+        <a class="btn ghost" href="/">↻ Refresh</a>
+      </div>
+      <% if (rows.length === 0) { %>
+        <div class="empty">No transactions yet.</div>
+      <% } else { %>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>#</th><th>Amount</th><th>Status</th><th>Created</th><th>Paid</th></tr></thead>
+          <tbody>
+            <% rows.forEach(function (r) { %>
+            <tr>
+              <td class="muted"><%= r.id %></td>
+              <td class="amt"><%= peso(r.amount) %></td>
+              <td>
+                <span class="pill <%= r.status %>"><%= r.status %></span>
+                <% if (r.status === 'pending') { %> <a class="link" href="/?tx=<%= r.id %>">show QR</a><% } %>
+              </td>
+              <td class="muted"><%= when(r.created_at) %></td>
+              <td class="muted"><%= when(r.paid_at) %></td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+      <% } %>
+    </section>
+  </div>
+</body>
+</html>
